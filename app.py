@@ -295,6 +295,22 @@ def admin_delete():
 
 
 @app.route("/admin/update", methods=["POST"])
+
+@app.route("/admin/push-alert", methods=["POST"])
+def admin_push_alert():
+    """推送超时工单提醒到飞书/微信"""
+    try:
+        import notify
+        ok, msg = notify.push_overdue_alert()
+        if ok:
+            flash(msg, "success")
+        else:
+            flash(msg, "warning" if "未配置" in msg else "danger")
+    except Exception as e:
+        flash(f"推送失败: {str(e)}", "danger")
+    return redirect(url_for("admin"))
+
+
 def admin_update():
     work_order = request.form.get("work_order", "").strip()
     status = request.form.get("status", "").strip()

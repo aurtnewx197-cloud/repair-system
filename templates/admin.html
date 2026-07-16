@@ -116,6 +116,12 @@
                     </div>
                 </div>
                 <p class="text-2xl font-bold text-red-600">{{ overdue_count }}</p>
+                <form method="POST" action="/admin/push-alert" class="mt-2">
+                    <button type="submit" class="w-full text-xs font-medium bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-2 py-1.5 rounded-lg transition-colors"
+                            onclick="return confirm('确定推送超时提醒到飞书/微信？')">
+                        🔔 推送提醒
+                    </button>
+                </form>
             </div>
             <!-- 平均响应 -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
