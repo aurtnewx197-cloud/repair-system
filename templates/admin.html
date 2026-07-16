@@ -37,10 +37,15 @@
         @keyframes pulse-warn { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0.3); } 50% { box-shadow:0 0 0 8px rgba(239,68,68,0); } }
         .card-overdue { animation: pulse-warn 2s infinite; border-color: #ef4444 !important; }
 
-        /* 手机端横向滚动 */
+        /* 看板滚动 */
+        .kanban-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; -ms-overflow-style: none; scrollbar-width: none; }
+        .kanban-wrapper::-webkit-scrollbar { display: none; }
+        .kanban-columns { display: flex; gap: 1rem; min-width: 0; }
+        .kanban-col { flex: 1; min-width: 0; }
         @media (max-width: 768px) {
-            .kanban-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            .kanban-columns { width: 768px; }
+            .kanban-wrapper { margin: 0 -1rem; padding: 0 1rem; }
+            .kanban-columns { width: max-content; min-width: 100%; }
+            .kanban-col { width: 280px; flex: none; }
         }
     </style>
 </head>
@@ -126,10 +131,10 @@
 
         <!-- ===== Kanban 看板 ===== -->
         <div class="kanban-wrapper">
-            <div class="kanban-columns grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="kanban-columns">
 
                 <!-- ===== 列1: 待派发维修 ===== -->
-                <div class="bg-gray-100/80 rounded-2xl p-3 sm:p-4 kanban-dropzone" data-status="pending"
+                <div class="bg-gray-100/80 rounded-2xl p-3 sm:p-4 kanban-dropzone kanban-col" data-status="pending"
                      ondragover="event.preventDefault(); this.classList.add('drag-over')"
                      ondragleave="this.classList.remove('drag-over')"
                      ondrop="handleDrop(event, 'pending')">
@@ -183,13 +188,14 @@
                                         {{ o.wait_text }}
                                     </span>
                                 </div>
-                                <form method="POST" action="/admin/update" class="inline">
-                                    <input type="hidden" name="work_order" value="{{ o.work_order }}">
-                                    <input type="hidden" name="status" value="in_progress">
-                                    <button class="text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm">
+                                <button onclick="deleteOrder('{{ o.work_order }}')"
+                                        class="text-xs text-gray-400 hover:text-red-500 px-1 py-1.5 transition-colors" title="删除工单">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                    <button onclick="acceptOrder('{{ o.work_order }}', this)"
+                                        class="text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm">
                                         接单 →
                                     </button>
-                                </form>
                             </div>
                         </div>
                         {% else %}
@@ -205,7 +211,7 @@
                 </div>
 
                 <!-- ===== 列2: 维修处理中 ===== -->
-                <div class="bg-gray-100/80 rounded-2xl p-3 sm:p-4 kanban-dropzone" data-status="in_progress"
+                <div class="bg-gray-100/80 rounded-2xl p-3 sm:p-4 kanban-dropzone kanban-col" data-status="in_progress"
                      ondragover="event.preventDefault(); this.classList.add('drag-over')"
                      ondragleave="this.classList.remove('drag-over')"
                      ondrop="handleDrop(event, 'in_progress')">
@@ -289,15 +295,18 @@
 
                             <!-- 完成按钮 -->
                             <div class="pt-2 border-t border-gray-50">
-                                <form method="POST" action="/admin/update" class="flex gap-2 items-center">
-                                    <input type="hidden" name="work_order" value="{{ o.work_order }}">
-                                    <input type="hidden" name="status" value="completed">
-                                    <input type="text" name="assigned_to" value="{{ o.assigned_to }}"
-                                           placeholder="人员" class="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-emerald-500">
-                                    <button class="text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm whitespace-nowrap">
-                                        完成 ✓
+                                <button onclick="deleteOrder('{{ o.work_order }}')"
+                                        class="text-xs text-gray-400 hover:text-red-500 px-1.5 py-1.5 transition-colors" title="删除工单">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                     </button>
-                                </form>
+                                    <div class="flex gap-2 items-center flex-1">
+                                    <input type="text" id="assign_{{ o.work_order }}" value="{{ o.assigned_to }}"
+                                           placeholder="人员" class="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-emerald-500">
+                                    <button onclick="completeOrder('{{ o.work_order }}', this)"
+                                            class="text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm whitespace-nowrap">
+                                            完成 ✓
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         {% else %}
@@ -313,7 +322,7 @@
                 </div>
 
                 <!-- ===== 列3: 维修完成 ===== -->
-                <div class="bg-gray-100/80 rounded-2xl p-3 sm:p-4 kanban-dropzone" data-status="completed"
+                <div class="bg-gray-100/80 rounded-2xl p-3 sm:p-4 kanban-dropzone kanban-col" data-status="completed"
                      ondragover="event.preventDefault(); this.classList.add('drag-over')"
                      ondragleave="this.classList.remove('drag-over')"
                      ondrop="handleDrop(event, 'completed')">
@@ -406,55 +415,83 @@
         let draggedWorkOrder = null;
 
         function handleDragStart(event) {
-            draggedWorkOrder = event.target.closest('.kanban-card').dataset.workOrder;
-            event.target.closest('.kanban-card').classList.add('dragging');
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/plain', draggedWorkOrder);
+            draggedWorkOrder = event.target.closest(".kanban-card").dataset.workOrder;
+            event.target.closest(".kanban-card").classList.add("dragging");
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", draggedWorkOrder);
         }
 
-        document.addEventListener('dragend', function(event) {
-            const card = event.target.closest('.kanban-card');
-            if (card) card.classList.remove('dragging');
-            document.querySelectorAll('.kanban-dropzone').forEach(el => el.classList.remove('drag-over'));
+        document.addEventListener("dragend", function(event) {
+            const card = event.target.closest(".kanban-card");
+            if (card) card.classList.remove("dragging");
+            document.querySelectorAll(".kanban-dropzone").forEach(el => el.classList.remove("drag-over"));
         });
 
         function handleDrop(event, newStatus) {
             event.preventDefault();
-            const zone = event.target.closest('.kanban-dropzone');
-            if (zone) zone.classList.remove('drag-over');
-
+            const zone = event.target.closest(".kanban-dropzone");
+            if (zone) zone.classList.remove("drag-over");
             if (!draggedWorkOrder) return;
-
-            const statusMap = {
-                'pending': 'pending',
-                'in_progress': 'in_progress',
-                'completed': 'completed'
-            };
-
-            const mappedStatus = statusMap[newStatus] || 'pending';
-
-            // 发送 POST 请求更新状态
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/admin/update';
-            form.style.display = 'none';
-
-            const woInput = document.createElement('input');
-            woInput.type = 'hidden';
-            woInput.name = 'work_order';
-            woInput.value = draggedWorkOrder;
-
-            const statusInput = document.createElement('input');
-            statusInput.type = 'hidden';
-            statusInput.name = 'status';
-            statusInput.value = mappedStatus;
-
-            form.appendChild(woInput);
-            form.appendChild(statusInput);
-            document.body.appendChild(form);
-            form.submit();
-
+            apiUpdate(draggedWorkOrder, newStatus, "", function() {
+                moveCardToColumn(draggedWorkOrder, newStatus);
+            });
             draggedWorkOrder = null;
+        }
+
+        function apiUpdate(workOrder, status, assignedTo, callback) {
+            const formData = new URLSearchParams();
+            formData.append("work_order", workOrder);
+            formData.append("status", status);
+            if (assignedTo) formData.append("assigned_to", assignedTo);
+            fetch("/admin/update", {
+                method: "POST",
+                headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                body: formData.toString()
+            }).then(function(r) {
+                if (r.ok && callback) callback();
+            });
+        }
+
+        function acceptOrder(workOrder, btn) {
+            apiUpdate(workOrder, "in_progress", "", function() {
+                var card = btn.closest(".kanban-card");
+                card.style.opacity = "0.4";
+                card.querySelector("form")?.remove();
+                card.style.opacity = "1";
+                location.reload();
+            });
+        }
+
+        function completeOrder(workOrder, btn) {
+            var assignInput = document.getElementById("assign_" + workOrder);
+            var assignedTo = assignInput ? assignInput.value.trim() : "";
+            apiUpdate(workOrder, "completed", assignedTo, function() {
+                location.reload();
+            });
+        }
+
+        function deleteOrder(workOrder) {
+            if (!confirm("确定要删除工单 " + workOrder + " 吗？")) return;
+            const formData = new URLSearchParams();
+            formData.append("work_order", workOrder);
+            fetch("/admin/delete", {
+                method: "POST",
+                headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                body: formData.toString()
+            }).then(function(r) {
+                if (r.ok) location.reload();
+            });
+        }
+
+        function moveCardToColumn(workOrder, newStatus) {
+            var card = document.querySelector("[data-work-order='" + workOrder + "']");
+            if (!card) return;
+            var colId = newStatus === "in_progress" ? 1 : newStatus === "completed" ? 2 : 0;
+            var cols = document.querySelectorAll(".kanban-dropzone");
+            if (cols[colId]) {
+                cols[colId].querySelector(".space-y-3").appendChild(card);
+                card.style.opacity = "1";
+            }
         }
     </script>
 

@@ -191,6 +191,18 @@ def update_order_status(work_order, status, assigned_to=""):
         conn.close()
 
 
+
+def delete_order(work_order):
+    conn = get_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(f"DELETE FROM orders WHERE work_order = {PLACEHOLDER}", (work_order,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+
 def get_orders_by_date(date_str):
     """获取指定日期的所有工单 (按 created_at 日期筛选)"""
     conn = get_db()

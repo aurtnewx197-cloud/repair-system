@@ -243,8 +243,6 @@ def admin():
     )
 
 
-@app.route("/admin/update", methods=["POST"])
-
 @app.route("/stats")
 @app.route("/stats/<date_str>")
 def stats(date_str=None):
@@ -287,6 +285,16 @@ def stats(date_str=None):
     )
 
 
+
+@app.route("/admin/delete", methods=["POST"])
+def admin_delete():
+    work_order = request.form.get("work_order", "").strip()
+    if work_order:
+        database.delete_order(work_order)
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/update", methods=["POST"])
 def admin_update():
     work_order = request.form.get("work_order", "").strip()
     status = request.form.get("status", "").strip()
@@ -296,8 +304,6 @@ def admin_update():
         flash("参数不完整", "danger")
         return redirect(url_for("admin"))
 
-    database.update_order_status(work_order, status)
-    if assigned_to:
-        database.update_order_status(work_order, None, assigned_to)
+    database.update_order_status(work_order, status, assigned_to)
     return redirect(url_for("admin"))
 
