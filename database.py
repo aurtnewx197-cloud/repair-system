@@ -1,4 +1,4 @@
-﻿import os
+import os
 import random
 import string
 from datetime import datetime
@@ -6,7 +6,16 @@ from datetime import datetime
 # ---- 数据库模式自动选择 ----
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
-if DATABASE_URL:
+# 尝试导入 psycopg2（可能不支持 Python 3.14+）
+_PSYCOPG2_AVAILABLE = False
+try:
+    import psycopg2
+    import psycopg2.extras
+    _PSYCOPG2_AVAILABLE = True
+except ImportError:
+    pass
+
+if DATABASE_URL and _PSYCOPG2_AVAILABLE:
     # ===== PostgreSQL (Render) =====
     import psycopg2
     import psycopg2.extras
