@@ -244,6 +244,49 @@ def admin():
 
 
 @app.route("/admin/update", methods=["POST"])
+
+@app.route("/stats")
+@app.route("/stats/<date_str>")
+def stats(date_str=None):
+    from datetime import datetime, timedelta
+
+    if date_str is None:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+    else:
+        # Validate date format
+        try:
+            datetime.strptime(date_str, "%Y-%m-%d")
+        except:
+            date_str = datetime.now().strftime("%Y-%m-%d")
+
+    orders = database.get_orders_by_date(date_str)
+    total = len(orders)
+    pending = sum(1 for o in orders if o["status"] == "pending")
+    in_progress = sum(1 for o in orders if o["status"] == "in_progress")
+    completed = sum(1 for o in orders if o["status"] == "completed")
+    rate = round(completed / total * 100) if total > 0 else 0
+
+    # Previous and next dates
+    current = datetime.strptime(date_str, "%Y-%m-%d")
+    prev_date = (current - timedelta(days=1)).strftime("%Y-%m-%d")
+    next_date = (current + timedelta(days=1)).strftime("%Y-%m-%d")
+    today_str = datetime.now().strftime("%Y-%m-%d")
+
+    return render_template(
+        "stats.html",
+        date_str=date_str,
+        total=total,
+        pending=pending,
+        in_progress=in_progress,
+        completed=completed,
+        rate=rate,
+        orders=orders,
+        prev_date=prev_date,
+        next_date=next_date,
+        today_str=today_str,
+    )
+
+
 def admin_update():
     work_order = request.form.get("work_order", "").strip()
     status = request.form.get("status", "").strip()
