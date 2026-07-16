@@ -1,0 +1,46 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+server_*.log
+server.err
+server_out.log
+server_err.log
+
+# Backup
+_backup_*.zip
+
+# Temporary scripts
+fix_*.py
+check_*.py
+launch_*.py
+test_*.py
+run_server.py
+_serve.py
+_verify.py
+
+# Database (keep if you want to commit, WARNING: will be overwritten on deploy)
+# If deploying to production, DO NOT commit the database file
+# repair.db

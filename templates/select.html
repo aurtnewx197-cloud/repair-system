@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>选择企业 - 智慧物业</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:{50:"#ecfdf5",100:"#d1fae5",200:"#a7f3d0",300:"#6ee7b7",400:"#34d399",500:"#10b981",600:"#059669",700:"#047857",800:"#065f46",900:"#064e3b"}}}}}</script>
+</head>
+<body class="bg-gray-50 font-sans">
+
+    <div class="bg-gradient-to-br from-emerald-600 to-teal-700 px-5 pt-5 pb-8 rounded-b-[32px] shadow-lg">
+        <div class="flex items-center gap-3">
+            <a href="/" class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-white text-xl font-bold">选择企业</h1>
+                <p class="text-emerald-100 text-xs">请选择您所在的企业</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 -mt-5 pb-8 space-y-4">
+
+        <div class="bg-white rounded-2xl shadow-lg p-4">
+            <div class="relative">
+                <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" id="searchInput" placeholder="输入企业编号或名称搜索" oninput="filter(this.value)">
+            </div>
+            <p class="text-gray-400 text-xs mt-2" id="countLabel">300 家企业</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-4">
+            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5" id="companyGrid">
+                {% for c in companies %}
+                <a href="/enterprise/{{ c.code }}" class="company-item flex flex-col items-center p-3 rounded-xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 transition-all duration-150 active:scale-95" data-code="{{ c.code }}" data-name="{{ c.name }}">
+                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-sm mb-1.5">
+                        {{ c.code[1:] }}
+                    </div>
+                    <span class="text-gray-700 text-xs font-semibold">{{ c.code }}</span>
+                    <span class="text-gray-400 text-xs mt-0.5">{{ c.name }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a href="/" class="inline-flex items-center gap-1 text-gray-400 text-sm hover:text-gray-600 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                返回首页
+            </a>
+        </div>
+    </div>
+
+    <script>
+    function filter(q) {
+        var query = q.toUpperCase().trim();
+        var items = document.querySelectorAll('.company-item');
+        var count = 0;
+        items.forEach(function(el) {
+            var code = el.getAttribute('data-code').toUpperCase();
+            var name = el.getAttribute('data-name');
+            var match = code.includes(query) || name.includes(q);
+            el.style.display = match ? '' : 'none';
+            if (match) count++;
+        });
+        document.getElementById('countLabel').textContent = count + ' 家企业';
+    }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,461 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>工单看板 - 智慧物业</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 平滑滚动 & 自定义滚动条 */
+        .kanban-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+        .kanban-scroll::-webkit-scrollbar-track { background: transparent; }
+        .kanban-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+        .kanban-scroll::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+        /* 拖拽样式 */
+        .kanban-card { cursor: grab; transition: all 0.2s ease; }
+        .kanban-card:active { cursor: grabbing; }
+        .kanban-card.dragging { opacity: 0.5; transform: scale(0.95); }
+        .kanban-dropzone.drag-over { background: #f0fdf4 !important; border-color: #34d399 !important; }
+
+        /* 卡片入场动画 */
+        @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .card-enter { animation: slideUp 0.3s ease forwards; }
+
+        /* 超时脉冲 */
+        @keyframes pulse-warn { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0.3); } 50% { box-shadow:0 0 0 8px rgba(239,68,68,0); } }
+        .card-overdue { animation: pulse-warn 2s infinite; border-color: #ef4444 !important; }
+
+        /* 手机端横向滚动 */
+        @media (max-width: 768px) {
+            .kanban-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .kanban-columns { width: 768px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+
+    <!-- ===== 顶部导航 ===== -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <a href="/" class="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    </a>
+                    <div>
+                        <h1 class="text-gray-800 font-bold text-lg leading-tight">工单看板</h1>
+                        <p class="text-gray-400 text-xs">实时监控 · 智能调度</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-400 text-sm hidden sm:block">{{ total_count }} 条工单</span>
+                    <a href="/" class="text-gray-400 hover:text-emerald-600 transition-colors text-sm">← 首页</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+        <!-- ===== 顶部统计卡片 ===== -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            <!-- 今日报修 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-gray-400 text-xs font-medium">今日报修</span>
+                    <div class="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-gray-800">{{ today_count }}</p>
+            </div>
+            <!-- 待派发 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-amber-100 p-4 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-gray-400 text-xs font-medium">待派发</span>
+                    <div class="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-amber-600">{{ pending_count }}</p>
+            </div>
+            <!-- 维修中 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-blue-100 p-4 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-gray-400 text-xs font-medium">维修中</span>
+                    <div class="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-blue-600">{{ progress_count }}</p>
+            </div>
+            <!-- 超时任务 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-red-100 p-4 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-gray-400 text-xs font-medium">超时任务</span>
+                    <div class="w-7 h-7 bg-red-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-red-600">{{ overdue_count }}</p>
+            </div>
+            <!-- 平均响应 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-gray-400 text-xs font-medium">平均响应</span>
+                    <div class="w-7 h-7 bg-purple-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                    </div>
+                </div>
+                <p class="text-2xl font-bold text-purple-600">{{ avg_response }}</p>
+            </div>
+        </div>
+
+        <!-- ===== Kanban 看板 ===== -->
+        <div class="kanban-wrapper">
+            <div class="kanban-columns grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                <!-- ===== 列1: 待派发维修 ===== -->
+                <div class="bg-gray-100/80 rounded-2xl p-3 sm:p-4 kanban-dropzone" data-status="pending"
+                     ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                     ondragleave="this.classList.remove('drag-over')"
+                     ondrop="handleDrop(event, 'pending')">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-gray-800 font-bold text-sm">待派发维修</h3>
+                            <p class="text-xs text-gray-400">{{ todo_list|length }} 个工单</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 min-h-[200px]">
+                        {% for o in todo_list %}
+                        <div class="kanban-card bg-white rounded-xl border shadow-sm p-4 card-enter
+                            {% if o.is_overdue %}border-red-400 card-overdue{% elif o.wait_level == 'danger' %}border-orange-300{% elif o.wait_level == 'warning' %}border-amber-200{% else %}border-gray-100{% endif %}"
+                            draggable="true"
+                            data-work-order="{{ o.work_order }}"
+                            ondragstart="handleDragStart(event)">
+                            <!-- 头部: 企业 + 室号 -->
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-semibold text-gray-800 text-sm truncate">{{ o.company }}</span>
+                                        <span class="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md font-mono">{{ o.room }}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-0.5">工单: {{ o.work_order }}</p>
+                                </div>
+                                <!-- 紧急程度徽章 -->
+                                {% if o.is_overdue %}
+                                <span class="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full whitespace-nowrap">超时</span>
+                                {% elif o.wait_level == 'danger' %}
+                                <span class="text-xs font-bold text-white bg-orange-500 px-2 py-0.5 rounded-full whitespace-nowrap">紧急</span>
+                                {% elif o.wait_level == 'warning' %}
+                                <span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full whitespace-nowrap">提醒</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- 报修内容 -->
+                            <p class="text-sm text-gray-600 mb-2 line-clamp-2">{{ o.description }}</p>
+                            {% if o.repair_type %}
+                            <span class="inline-block text-xs bg-gray-50 text-gray-500 border border-gray-100 px-2 py-0.5 rounded-md mb-2">{{ o.repair_type }}</span>
+                            {% endif %}
+
+                            <!-- 底部: 时间 + 接单按钮 -->
+                            <div class="flex items-center justify-between pt-2 border-t border-gray-50">
+                                <div class="flex items-center gap-1.5 text-xs text-gray-400">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span class="{% if o.is_overdue %}text-red-500 font-semibold{% elif o.wait_level == 'danger' %}text-orange-500 font-semibold{% elif o.wait_level == 'warning' %}text-amber-600{% else %}text-gray-400{% endif %}">
+                                        {{ o.wait_text }}
+                                    </span>
+                                </div>
+                                <form method="POST" action="/admin/update" class="inline">
+                                    <input type="hidden" name="work_order" value="{{ o.work_order }}">
+                                    <input type="hidden" name="status" value="in_progress">
+                                    <button class="text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm">
+                                        接单 →
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-10">
+                            <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <p class="text-gray-400 text-sm">暂无待派发工单</p>
+                            <p class="text-gray-300 text-xs mt-1">新工单将自动出现于此</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- ===== 列2: 维修处理中 ===== -->
+                <div class="bg-gray-100/80 rounded-2xl p-3 sm:p-4 kanban-dropzone" data-status="in_progress"
+                     ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                     ondragleave="this.classList.remove('drag-over')"
+                     ondrop="handleDrop(event, 'in_progress')">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-gray-800 font-bold text-sm">维修处理中</h3>
+                            <p class="text-xs text-gray-400">{{ doing_list|length }} 个工单</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 min-h-[200px]">
+                        {% for o in doing_list %}
+                        <div class="kanban-card bg-white rounded-xl border shadow-sm p-4 card-enter
+                            {% if o.duration_minutes and o.duration_minutes > 240 %}border-red-400 card-overdue{% elif o.duration_minutes and o.duration_minutes > 120 %}border-orange-300{% else %}border-blue-100{% endif %}"
+                            draggable="true"
+                            data-work-order="{{ o.work_order }}"
+                            ondragstart="handleDragStart(event)">
+                            <!-- 头部 -->
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-semibold text-gray-800 text-sm truncate">{{ o.company }}</span>
+                                        <span class="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md font-mono">{{ o.room }}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-0.5">工单: {{ o.work_order }}</p>
+                                </div>
+                                {% if o.duration_minutes and o.duration_minutes > 240 %}
+                                <span class="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full whitespace-nowrap">超时</span>
+                                {% elif o.duration_minutes and o.duration_minutes > 120 %}
+                                <span class="text-xs font-bold text-white bg-orange-500 px-2 py-0.5 rounded-full whitespace-nowrap">超时预警</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- 报修内容 -->
+                            <p class="text-sm text-gray-600 mb-2 line-clamp-2">{{ o.description }}</p>
+
+                            <!-- 维修人员 -->
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <span>{{ o.assigned_to or '未指定' }}</span>
+                                <span class="mx-1">·</span>
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span class="{% if o.duration_minutes and o.duration_minutes > 240 %}text-red-500 font-semibold{% elif o.duration_minutes and o.duration_minutes > 120 %}text-orange-500{% else %}text-gray-500{% endif %}">
+                                    {{ o.duration_text }}
+                                </span>
+                            </div>
+
+                            <!-- 进度条 -->
+                            <div class="mb-3">
+                                <div class="flex items-center justify-between text-xs mb-1">
+                                    <span class="text-gray-400">维修进度</span>
+                                    <span class="font-semibold text-blue-600">75%</span>
+                                </div>
+                                <div class="w-full bg-gray-100 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width:75%"></div>
+                                </div>
+                            </div>
+
+                            <!-- 进度步骤 -->
+                            <div class="grid grid-cols-4 gap-1 mb-3">
+                                <div class="text-center">
+                                    <div class="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto text-xs font-bold">✓</div>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">提交</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto text-xs font-bold">✓</div>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">接单</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto text-xs font-bold">●</div>
+                                    <p class="text-[10px] text-emerald-600 font-medium mt-0.5">维修</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-5 h-5 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center mx-auto text-xs">4</div>
+                                    <p class="text-[10px] text-gray-300 mt-0.5">完成</p>
+                                </div>
+                            </div>
+
+                            <!-- 完成按钮 -->
+                            <div class="pt-2 border-t border-gray-50">
+                                <form method="POST" action="/admin/update" class="flex gap-2 items-center">
+                                    <input type="hidden" name="work_order" value="{{ o.work_order }}">
+                                    <input type="hidden" name="status" value="completed">
+                                    <input type="text" name="assigned_to" value="{{ o.assigned_to }}"
+                                           placeholder="人员" class="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-emerald-500">
+                                    <button class="text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm whitespace-nowrap">
+                                        完成 ✓
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-10">
+                            <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            </div>
+                            <p class="text-gray-400 text-sm">暂无维修中的工单</p>
+                            <p class="text-gray-300 text-xs mt-1">接单后的工单将显示于此</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- ===== 列3: 维修完成 ===== -->
+                <div class="bg-gray-100/80 rounded-2xl p-3 sm:p-4 kanban-dropzone" data-status="completed"
+                     ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                     ondragleave="this.classList.remove('drag-over')"
+                     ondrop="handleDrop(event, 'completed')">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-gray-800 font-bold text-sm">维修完成</h3>
+                            <p class="text-xs text-gray-400">{{ done_list|length }} 个工单</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 min-h-[200px]">
+                        {% for o in done_list %}
+                        <div class="kanban-card bg-white rounded-xl border border-emerald-100 shadow-sm p-4 card-enter"
+                            draggable="false">
+                            <!-- 头部 -->
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-semibold text-gray-800 text-sm truncate">{{ o.company }}</span>
+                                        <span class="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md font-mono">{{ o.room }}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-0.5">工单: {{ o.work_order }}</p>
+                                </div>
+                                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full whitespace-nowrap">已完成</span>
+                            </div>
+
+                            <!-- 报修内容 -->
+                            <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ o.description }}</p>
+
+                            <!-- 完成人员 + 时间 -->
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <span>{{ o.assigned_to or '未知' }}</span>
+                                <span class="mx-1">·</span>
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span>{{ o.total_time }}</span>
+                            </div>
+
+                            <!-- 进度条 100% -->
+                            <div class="mb-3">
+                                <div class="flex items-center justify-between text-xs mb-1">
+                                    <span class="text-gray-400">完成进度</span>
+                                    <span class="font-semibold text-emerald-600">100%</span>
+                                </div>
+                                <div class="w-full bg-gray-100 rounded-full h-2">
+                                    <div class="bg-emerald-500 h-2 rounded-full" style="width:100%"></div>
+                                </div>
+                            </div>
+
+                            <!-- 完成步骤 -->
+                            <div class="grid grid-cols-4 gap-1">
+                                <div class="text-center">
+                                    <div class="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto text-xs font-bold">✓</div>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">提交</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto text-xs font-bold">✓</div>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">接单</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto text-xs font-bold">✓</div>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">维修</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto text-xs font-bold">✓</div>
+                                    <p class="text-[10px] text-emerald-600 font-medium mt-0.5">完成</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-10">
+                            <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <p class="text-gray-400 text-sm">暂无已完成工单</p>
+                            <p class="text-gray-300 text-xs mt-1">完成的工单将自动归档于此</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 拖拽 JavaScript ===== -->
+    <script>
+        let draggedWorkOrder = null;
+
+        function handleDragStart(event) {
+            draggedWorkOrder = event.target.closest('.kanban-card').dataset.workOrder;
+            event.target.closest('.kanban-card').classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', draggedWorkOrder);
+        }
+
+        document.addEventListener('dragend', function(event) {
+            const card = event.target.closest('.kanban-card');
+            if (card) card.classList.remove('dragging');
+            document.querySelectorAll('.kanban-dropzone').forEach(el => el.classList.remove('drag-over'));
+        });
+
+        function handleDrop(event, newStatus) {
+            event.preventDefault();
+            const zone = event.target.closest('.kanban-dropzone');
+            if (zone) zone.classList.remove('drag-over');
+
+            if (!draggedWorkOrder) return;
+
+            const statusMap = {
+                'pending': 'pending',
+                'in_progress': 'in_progress',
+                'completed': 'completed'
+            };
+
+            const mappedStatus = statusMap[newStatus] || 'pending';
+
+            // 发送 POST 请求更新状态
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/admin/update';
+            form.style.display = 'none';
+
+            const woInput = document.createElement('input');
+            woInput.type = 'hidden';
+            woInput.name = 'work_order';
+            woInput.value = draggedWorkOrder;
+
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'status';
+            statusInput.value = mappedStatus;
+
+            form.appendChild(woInput);
+            form.appendChild(statusInput);
+            document.body.appendChild(form);
+            form.submit();
+
+            draggedWorkOrder = null;
+        }
+    </script>
+
+</body>
+</html>

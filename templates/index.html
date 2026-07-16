@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智慧物业 · 报修系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' },
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-sans">
+
+    <!-- 顶部渐变 -->
+    <div class="bg-gradient-to-br from-emerald-600 to-teal-700 pb-8 rounded-b-[32px] shadow-lg">
+        <div class="px-5 pt-6 pb-4">
+            <div class="flex items-center justify-between mb-2">
+                <div>
+                    <h1 class="text-white text-2xl font-bold tracking-wide">智慧物业</h1>
+                    <p class="text-emerald-100 text-sm mt-0.5">企业园区 · 智能报修系统</p>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                    <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-4">
+                <div class="bg-white/15 rounded-xl px-4 py-2.5 flex-1 backdrop-blur-sm">
+                    <p class="text-emerald-100 text-xs">在线报修</p>
+                    <p class="text-white font-bold text-lg">即报即修</p>
+                </div>
+                <div class="bg-white/15 rounded-xl px-4 py-2.5 flex-1 backdrop-blur-sm">
+                    <p class="text-emerald-100 text-xs">实时追踪</p>
+                    <p class="text-white font-bold text-lg">全程可见</p>
+                </div>
+                <div class="bg-white/15 rounded-xl px-4 py-2.5 flex-1 backdrop-blur-sm">
+                    <p class="text-emerald-100 text-xs">服务覆盖</p>
+                    <p class="text-white font-bold text-lg">10栋楼宇</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 -mt-5 space-y-4 pb-8">
+
+        <!-- 报修入口卡片 -->
+        <div class="bg-white rounded-2xl shadow-lg shadow-emerald-100/50 p-6 border border-emerald-50">
+            <div class="flex items-start gap-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200 flex-shrink-0">
+                    <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-gray-800 text-xl font-bold">我要报修</h2>
+                    <p class="text-gray-400 text-sm mt-0.5">选择楼栋，填写信息即可快速提交工单</p>
+                </div>
+            </div>
+            <a href="/report" class="mt-5 w-full block text-center bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3.5 rounded-xl shadow-md shadow-emerald-200 hover:shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 active:scale-[0.98]">
+                立即报修
+            </a>
+        </div>
+
+        <!-- 查询进度卡片 -->
+        <div class="bg-white rounded-2xl shadow-lg shadow-blue-100/50 p-6 border border-blue-50">
+            <div class="flex items-start gap-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 flex-shrink-0">
+                    <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-gray-800 text-xl font-bold">查询进度</h2>
+                    <p class="text-gray-400 text-sm mt-0.5">输入工单号，查看维修实时状态</p>
+                </div>
+            </div>
+            <form action="/track" method="POST" class="mt-5">
+                <div class="flex gap-2">
+                    <input type="text" name="work_order" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="输入工单号">
+                    <button type="submit" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium px-5 py-3 rounded-xl shadow-md shadow-blue-200 hover:shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 active:scale-[0.98]">
+                        查询
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 管理后台卡片 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <div class="flex items-start gap-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-700 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-gray-800 text-xl font-bold">管理后台</h2>
+                    <p class="text-gray-400 text-sm mt-0.5">处理工单 · 状态更新 · 人员指派</p>
+                </div>
+            </div>
+            <a href="/admin" class="mt-5 w-full block text-center bg-gradient-to-r from-gray-500 to-gray-600 text-white font-medium py-3.5 rounded-xl shadow-md hover:from-gray-600 hover:to-gray-700 transition-all duration-200 active:scale-[0.98]">
+                进入后台
+            </a>
+        </div>
+
+        <!-- 底部信息 -->
+        <div class="text-center text-gray-400 text-xs py-4">
+            <p>企业园区智慧物业系统 v3.0</p>
+        </div>
+    </div>
+
+</body>
+</html>
