@@ -5,7 +5,7 @@
     region: singapore
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:application --bind 0.0.0.0:\ --workers 2 --timeout 120 --log-file -
+    startCommand: gunicorn wsgi:application --bind 0.0.0.0:\ --workers 1 --timeout 120 --log-file -
     healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
