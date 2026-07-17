@@ -1,15 +1,27 @@
-"""超时工单推送模块 - 飞书/企业微信"""
+﻿"""超时工单推送模块 - 飞书/企业微信"""
+import hashlib
+import hmac
 import os
 import json
+import time
 import urllib.request
 import urllib.error
+from datetime import datetime, timedelta
 import database
-from datetime import datetime
 
 # 从环境变量读取 Webhook URL（在 Render 上设置）
 FEISHU_WEBHOOK = os.environ.get("FEISHU_WEBHOOK", "")
 FEISHU_SECRET = os.environ.get("FEISHU_SECRET", "")
 WECHAT_WEBHOOK = os.environ.get("WECHAT_WEBHOOK", "")
+
+
+def _gen_feishu_sign(timestamp, secret):
+    """生成飞书机器人签名"""
+    if not secret:
+        return ""
+    import base64
+    string_to_sign = f"{timestamp}\n{secret}"
+    return base64.b64encode(hmac.new(string_to_sign.encode("utf-8"), digestmod=hashlib.sha256).digest()).decode("utf-8")
 
 
 def send_feishu(orders):
@@ -85,7 +97,6 @@ def get_overdue_orders(all_orders=None):
     """获取所有超时工单（超过4小时未处理）"""
     if all_orders is None:
         all_orders = database.get_all_orders()
-    from datetime import timedelta
     now = datetime.now()
     overdue = []
     for o in all_orders:
@@ -96,10 +107,12 @@ def get_overdue_orders(all_orders=None):
                     minutes = int((now - created).total_seconds() / 60)
                     h = minutes // 60
                     m = minutes % 60
-                    o["wait_text"] = f"{h}小时{m}分钟"
-                    overdue.append(o)
-            except:
-                pass
+                    # 转为 dict 再添加 wait_text（避免 sqlite3.Row 只读问题）
+                    item = dict(o)
+                    item["wait_text"] = f"{h}小时{m}分钟"
+                    overdue.append(item)
+            except Exception as e:
+                print(f"[notify] get_overdue_orders error: {type(e).__name__}: {e}")
     return overdue
 
 
