@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS orders (
     reporter_phone TEXT DEFAULT '',
     repair_type TEXT DEFAULT '',
     description TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT '"'"'pending'"'"',
+    status TEXT NOT NULL DEFAULT 'pending',
     assigned_to TEXT DEFAULT '',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
