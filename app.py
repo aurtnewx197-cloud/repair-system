@@ -301,8 +301,6 @@ def admin_delete():
     return redirect(url_for("admin"))
 
 
-@app.route("/admin/update", methods=["POST"])
-
 @app.route("/admin/push-alert", methods=["POST"])
 def admin_push_alert():
     """推送超时工单提醒到飞书/微信"""
@@ -318,6 +316,7 @@ def admin_push_alert():
     return redirect(url_for("admin"))
 
 
+@app.route("/admin/update", methods=["POST"])
 def admin_update():
     work_order = request.form.get("work_order", "").strip()
     status = request.form.get("status", "").strip()
