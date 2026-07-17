@@ -8,6 +8,7 @@ from datetime import datetime
 
 # 从环境变量读取 Webhook URL（在 Render 上设置）
 FEISHU_WEBHOOK = os.environ.get("FEISHU_WEBHOOK", "")
+FEISHU_SECRET = os.environ.get("FEISHU_SECRET", "")
 WECHAT_WEBHOOK = os.environ.get("WECHAT_WEBHOOK", "")
 
 
@@ -29,7 +30,10 @@ def send_feishu(orders):
     if cards:
         cards.pop()  # 去掉最后一个分隔线
 
+    ts = str(int(time.time()))
     payload = {
+        "timestamp": ts,
+        "sign": _gen_feishu_sign(ts, FEISHU_SECRET),
         "msg_type": "interactive",
         "card": {
             "header": {

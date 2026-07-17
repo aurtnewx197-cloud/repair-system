@@ -127,26 +127,41 @@ def admin():
     from datetime import datetime, timedelta
     from flask import request as flask_req
 
-    def get_wait_level(created_at_str):
+    SLA_HOURS = 4  # SLA 超时阈值（小时）
+
+    def is_overdue(order):
+        """统一超时判断：创建时间 + SLA 时长 > 当前时间 = 超时"""
+        created_str = order["created_at"] or ""
+        if not created_str:
+            return False
+        try:
+            created = datetime.strptime(created_str, "%Y-%m-%d %H:%M:%S")
+            deadline = created + timedelta(hours=SLA_HOURS)
+            return datetime.now() > deadline
+        except:
+            return False
+
+    def get_wait_info(created_at_str):
+        """返回等待时长描述和级别"""
         if not created_at_str:
-            return "normal", "刚刚", 0
+            return "刚刚", "normal", 0
         try:
             created = datetime.strptime(created_at_str, "%Y-%m-%d %H:%M:%S")
         except:
-            return "normal", "未知", 0
+            return "未知", "normal", 0
         minutes = int((datetime.now() - created).total_seconds() / 60)
         hours = minutes // 60
         mins = minutes % 60
         if minutes < 0:
-            return "normal", "刚刚", 0
+            return "刚刚", "normal", 0
         elif minutes < 30:
-            return "normal", f"{minutes}分钟", minutes
+            return f"{minutes}分钟", "normal", minutes
         elif minutes < 120:
-            return "warning", f"{hours}小时{mins}分钟", minutes
+            return f"{hours}小时{mins}分钟", "warning", minutes
         elif minutes < 240:
-            return "danger", f"{hours}小时{mins}分钟", minutes
+            return f"{hours}小时{mins}分钟", "danger", minutes
         else:
-            return "overdue", f"{hours}小时{mins}分钟", minutes
+            return f"{hours}小时{mins}分钟", "overdue", minutes
 
     all_orders = database.get_all_orders()
     now = datetime.now()
@@ -156,20 +171,10 @@ def admin():
     pending_count = sum(1 for o in all_orders if o["status"] == "pending")
     progress_count = sum(1 for o in all_orders if o["status"] == "in_progress")
 
-    overdue_count = 0
-    for o in all_orders:
-        if o["status"] in ("pending", "in_progress") and o["created_at"]:
-            try:
-                created = datetime.strptime(o["created_at"], "%Y-%m-%d %H:%M:%S")
-                if o["status"] == "pending" and (now - created).total_seconds() > 14400:
-                    overdue_count += 1
-                elif o["status"] == "in_progress":
-                    target = datetime.strptime(o["updated_at"], "%Y-%m-%d %H:%M:%S") if o["updated_at"] else created
-                    if o["assigned_to"] and (now - target).total_seconds() > 14400:
-                        overdue_count += 1
-            except:
-                pass
+    # 统一使用 is_overdue 计算超时数量
+    overdue_count = sum(1 for o in all_orders if is_overdue(o) and o["status"] in ("pending", "in_progress"))
 
+    # 平均响应时间
     response_times = []
     for o in all_orders:
         if o["status"] in ("in_progress", "completed") and o["created_at"] and o["updated_at"]:
@@ -188,7 +193,9 @@ def admin():
     todo_list, doing_list, done_list = [], [], []
 
     for o in all_orders:
-        level, wait_text, wait_minutes = get_wait_level(o["created_at"])
+        overdue_flag = is_overdue(o)
+        wait_text, wait_level, wait_minutes = get_wait_info(o["created_at"])
+
         card = {
             "work_order": o["work_order"],
             "company": o["company"],
@@ -202,16 +209,16 @@ def admin():
             "created_at": o["created_at"],
             "updated_at": o["updated_at"],
             "wait_text": wait_text,
-            "wait_level": level,
+            "wait_level": wait_level,
             "wait_minutes": wait_minutes,
-            "is_overdue": level == "overdue",
+            "is_overdue": overdue_flag,
         }
 
         if o["status"] == "pending":
             todo_list.append(card)
         elif o["status"] == "in_progress":
             accept_time = o["updated_at"] if o["updated_at"] else o["created_at"]
-            _, dur_text, dur_minutes = get_wait_level(accept_time)
+            dur_text, _, dur_minutes = get_wait_info(accept_time)
             card["accept_time"] = accept_time
             card["duration_text"] = dur_text
             card["duration_minutes"] = dur_minutes
@@ -219,7 +226,7 @@ def admin():
             doing_list.append(card)
         elif o["status"] == "completed":
             end_time = o["updated_at"] if o["updated_at"] else o["created_at"]
-            _, total_text, total_minutes = get_wait_level(o["created_at"])
+            total_text, _, total_minutes = get_wait_info(o["created_at"])
             card["completed_at"] = end_time
             card["total_time"] = total_text
             card["total_minutes"] = total_minutes
