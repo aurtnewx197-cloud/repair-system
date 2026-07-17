@@ -6,30 +6,31 @@ from datetime import datetime
 # ---- 数据库模式自动选择 ----
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
-# 尝试导入 psycopg2（可能不支持 Python 3.14+）
+# 尝试导入 PG 驱动（pg8000 纯 Python，兼容所有 Python 版本）
 _PSYCOPG2_AVAILABLE = False
 try:
-    import psycopg2
-    import psycopg2.extras
+    import pg8000.dbapi
     _PSYCOPG2_AVAILABLE = True
 except ImportError:
     pass
 
 if DATABASE_URL and _PSYCOPG2_AVAILABLE:
     # ===== PostgreSQL (Render) =====
-    import psycopg2
-    import psycopg2.extras
+    from urllib.parse import urlparse
+    import pg8000.dbapi
+
+    def _pg_connect():
+        url = urlparse(DATABASE_URL)
+        return pg8000.dbapi.connect(
+            host=url.hostname,
+            port=url.port or 5432,
+            database=url.path[1:],
+            user=url.username,
+            password=url.password
+        )
 
     def get_db():
-        conn = psycopg2.connect(DATABASE_URL)
-        conn.autocommit = False
-        return conn
-
-    def _dict_row(cursor, row):
-        """将 PostgreSQL 查询结果转为字典"""
-        if row is None:
-            return None
-        return dict(zip([d[0] for d in cursor.description], row))
+        return _pg_connect()
 
     def init_db():
         conn = get_db()
@@ -56,17 +57,19 @@ if DATABASE_URL and _PSYCOPG2_AVAILABLE:
         conn.close()
 
     def _fetch_all(cursor):
-        """将 cursor.fetchall() 结果转为字典列表"""
-        columns = [d[0] for d in cursor.description]
-        return [dict(zip(columns, row)) for row in cursor.fetchall()]
+        if cursor.description is None:
+            return []
+        cols = [d[0].lower() for d in cursor.description]
+        return [dict(zip(cols, row)) for row in cursor.fetchall()]
 
     def _fetch_one(cursor):
-        """将 cursor.fetchone() 结果转为字典"""
+        if cursor.description is None:
+            return None
         row = cursor.fetchone()
         if row is None:
             return None
-        columns = [d[0] for d in cursor.description]
-        return dict(zip(columns, row))
+        cols = [d[0].lower() for d in cursor.description]
+        return dict(zip(cols, row))
 
     # PostgreSQL 参数占位符为 %s
     PLACEHOLDER = "%s"

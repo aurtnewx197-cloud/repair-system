@@ -1,0 +1,4 @@
+import os, struct
+from PIL do import Image
+
+frames_dir = r"D:\\ud863\ude01\ud863\udc20\ud863\udc04\tuFF1a\uFF1a\uFF1a\uFF1a\u00B0\u00B5\uFF1a\uFF1a\u00B8\uFF1a\u00B5\uFF1a\u00B4"
